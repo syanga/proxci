@@ -83,31 +83,30 @@ class ProximalInference:
             print("q, a=%d" % a, search.best_params_)
         return search.best_estimator_.h_
 
-    def por(self):
+    def por(self, reduction=np.mean):
         """Estimator based on function h"""
-        est = 0.0
+        estimates = []
         for fold in range(self.crossfit_folds):
             r = self.data.r1[self.cf_inds[fold]["eval"]]
-            est += np.mean(self.h[fold][1](r)) - np.mean(self.h[fold][0](r))
-        return est / self.crossfit_folds
+            estimates = np.append(estimates, self.h[fold][1](r) - self.h[fold][0](r))
+        return estimates if reduction is None else reduction(estimates)
 
-    def pipw(self):
+    def pipw(self, reduction=np.mean):
         """Estimator based on function q"""
-        est = 0.0
+        estimates = []
         for fold in range(self.crossfit_folds):
             fold_idx = self.cf_inds[fold]["eval"]
             I0 = self.data.A[fold_idx] == 0
             I1 = self.data.A[fold_idx] == 1
             r = self.data.r2[fold_idx]
             y = self.data.Y[fold_idx]
-            est += np.mean(I1 * y * self.q[fold][1](r)) - np.mean(
-                I0 * y * self.q[fold][0](r)
-            )
-        return est / self.crossfit_folds
+            est = I1 * y * self.q[fold][1](r) - I0 * y * self.q[fold][0](r)
+            estimates = np.append(estimates, est)
+        return estimates if reduction is None else reduction(estimates)
 
-    def dr(self):
+    def dr(self, reduction=np.mean):
         """Doubly robust estimator"""
-        est = 0.0
+        estimates = []
         for fold in range(self.crossfit_folds):
             fold_idx = self.cf_inds[fold]["eval"]
             I0 = self.data.A[fold_idx] == 0
@@ -120,5 +119,6 @@ class ProximalInference:
             h1 = self.h[fold][1](r1)
             q0 = self.q[fold][0](r2)
             q1 = self.q[fold][1](r2)
-            est += np.mean(I1 * (y - h1) * q1 + h1) - np.mean(I0 * (y - h0) * q0 + h0)
-        return est / self.crossfit_folds
+            est = I1 * (y - h1) * q1 + h1 - (I0 * (y - h0) * q0 + h0)
+            estimates = np.append(estimates, est)
+        return estimates if reduction is None else reduction(estimates)
