@@ -2,23 +2,21 @@ import numpy as np
 
 
 class ProxCIData:
-    def __init__(self, X, Z, M, U, Y, A):
+    def __init__(self, X, Z, W, Y, A):
         self.X = X
         self.Z = Z
-        self.M = M
-        self.U = U
+        self.W = W
         self.Y = Y
         self.A = A
         self.n = X.shape[0]
         assert Z.shape[0] == self.n
-        assert M.shape[0] == self.n
-        assert U.shape[0] == self.n
+        assert W.shape[0] == self.n
         assert Y.shape[0] == self.n
         assert A.shape[0] == self.n
 
     @property
     def r1(self):
-        return np.hstack((unvec(self.M), unvec(self.X)))
+        return np.hstack((unvec(self.W), unvec(self.X)))
 
     @property
     def r2(self):

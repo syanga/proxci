@@ -53,4 +53,4 @@ def generate_data(n):
     Y = np.random.normal(EY, np.sqrt(0.25))
 
     target = ba
-    return ProxCIData(X, Z, W, U, Y, A), target
+    return ProxCIData(X, Z, W, Y, A), target
