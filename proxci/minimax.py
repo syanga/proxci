@@ -145,7 +145,7 @@ class MinimaxRKHS(BaseEstimator):
         f_val = beta_val @ Kf_val
 
         metric = (
-            np.mean(f_val * (g1 + h_val + g2) - f_val**2)
+            np.mean(f_val * (g1 * h_val + g2) - f_val**2)
             - lambda_f * beta_val.T @ Kf_val @ beta_val
             + lambda_h * self.alpha_.T @ self.Kh_ @ self.alpha_
         )
