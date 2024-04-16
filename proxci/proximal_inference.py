@@ -59,7 +59,7 @@ class ProximalInference:
         )
         search.fit(data)
         if self.print_best_params > 0:
-            print("h, a=%d" % a, search.best_params_)
+            print("h, a=%d" % a, search.best_params_, "best score: ", search.best_score_)
         return search.best_estimator_.h_
 
     def estimate_q(self, a, fold=0):
@@ -80,7 +80,7 @@ class ProximalInference:
         )
         search.fit(data)
         if self.print_best_params > 0:
-            print("q, a=%d" % a, search.best_params_)
+            print("q, a=%d" % a, search.best_params_, "best score: ", search.best_score_)
         return search.best_estimator_.h_
 
     def por(self, reduction=np.mean):

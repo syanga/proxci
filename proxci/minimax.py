@@ -5,8 +5,10 @@ from sklearn.utils._param_validation import Interval
 from numbers import Integral, Real
 from sklearn.utils.validation import check_is_fitted
 from sklearn.model_selection import GridSearchCV
+import warnings
 
 from .proxci_dataset import *
+from .minimax_core import *
 
 
 def MinimaxRKHSCV(hdim, fdim, lambdas=None, gammas=None, cv=2, n_jobs=1, verbose=0):
@@ -92,22 +94,9 @@ class MinimaxRKHS(BaseEstimator):
         self.Kh_ = self._create_kernel(r1)
         self.Kf_ = self._create_kernel(r2)
 
-        # solve kkt system
-        n = self.Kh_.shape[0]
-
-        # scale hyperparameters
-        lambda_h = self.lambda_h / (n**0.8)
-        lambda_f = self.lambda_f / (n**0.8)
-
-        A11 = 2 * lambda_h * np.eye(n)
-        A12 = (g1 * self.Kf_.T).T / n
-        A21 = -(g1 * self.Kh_.T).T / n
-        A22 = 2 * (self.Kf_ / n + lambda_f * np.eye(n))
-        A = np.block([[A11, A12], [A21, A22]])
-        b = np.hstack([np.zeros(n), g2 / n])
-        sol = np.linalg.solve(A, b)
-        self.alpha_ = sol[:n]
-        self.beta_ = sol[n : 2 * n]
+        # solve minimax problem
+        self.alpha_, self.beta_ = kkt_solve(
+            self.Kh_, self.Kf_, g1, g2.copy(), self.lambda_h, self.lambda_f)
 
         # fitted h function
         self.r1_ = r1
@@ -132,22 +121,5 @@ class MinimaxRKHS(BaseEstimator):
         # fix h, solve max E[f(h*g1 + g2) - f^2] - lambda_f|f|^2
         h_val = self.h_(r1)
         Kf_val = self._create_kernel(r2)
-        n = Kf_val.shape[0]
 
-        # scale hyperparameters
-        lambda_h = self.lambda_h / (n**0.8)
-        lambda_f = self.lambda_f / (n**0.8)
-
-        A = Kf_val + n * lambda_f * np.eye(n)
-        b = 0.5 * (h_val * g1 + g2)
-        beta_val = np.linalg.solve(A, b)
-
-        f_val = beta_val @ Kf_val
-
-        metric = (
-            np.mean(f_val * (g1 * h_val + g2) - f_val**2)
-            - lambda_f * beta_val.T @ Kf_val @ beta_val
-            + lambda_h * self.alpha_.T @ self.Kh_ @ self.alpha_
-        )
-
-        return -metric
+        return score_nuisance_function(h_val, Kf_val, g1, g2.copy(), self.lambda_f)
